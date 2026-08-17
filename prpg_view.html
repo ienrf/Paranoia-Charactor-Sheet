@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Paranoia プレイ用ビューアー</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: sans-serif;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    height: 100vh;
+    overflow: hidden; /* デスクトップ全体を固定 */
+    position: relative;
+  }
+
+  /* 上部操作バー */
+  .toolbar {
+    height: 50px;
+    background-color: #181825;
+    border-bottom: 2px solid #313244;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 15px;
+    z-index: 99999;
+    position: relative;
+  }
+  .toolbar button {
+    padding: 8px 14px;
+    background-color: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    transition: 0.2s;
+  }
+  .toolbar button:hover { background-color: #45475a; }
+
+  /* ウインドウ本体 */
+  .window {
+    position: absolute;
+    min-width: 200px;
+    min-height: 140px;
+    background-color: #1e1e2e;
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    resize: both; /* 右下でのドラッグリサイズを有効化 */
+  }
+
+  /* ウインドウのヘッダーバー */
+  .window-header {
+    background-color: #313244;
+    padding: 6px 12px;
+    cursor: move; /* 移動用カーソル */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: #cdd6f4;
+    user-select: none;
+    border-bottom: 1px solid #45475a;
+  }
+  .close-btn {
+    background: none;
+    border: none;
+    color: #f38ba8;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .close-btn:hover { color: #ff5555; }
+
+/* CSS (ボタンの見た目を整える) */
+.btn-link {
+  display: inline-block;
+  padding: 8px 14px;
+  background-color: #313244;
+  color: #cdd6f4;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  text-decoration: none; /* 下線を消す */
+  font-weight: bold;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+.btn-link:hover {
+  background-color: #45475a;
+}
+
+  /* ウインドウのコンテンツ領域 */
+  .window-body {
+    padding: 12px;
+    flex: 1;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* キャラシート表示枠内のスタイル */
+  .char-info div { margin-bottom: 4px; }
+  .skill-container {
+    background-color: #181825;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .main-skill-group {
+    margin-bottom: 6px;
+  }
+  .main-skill-group:last-child {
+    margin-bottom: 0;
+  }
+  .main-skill-title {
+    font-weight: bold;
+    color: #cdd6f4;
+  }
+  .sub-skill {
+    padding-left: 12px;
+    color: #a6adc8;
+    font-size: 11px;
+    margin-top: 1px;
+  }
+
+  .divider { border: 0; border-top: 1px solid #313244; margin: 8px 0; }
+
+/* キャラウィンドウ内入力欄のスタイル */
+.header-inputs, .ap-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.short-num-input {
+  width: 50px;
+  background-color: #181825;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  color: #cdd6f4;
+  padding: 4px 6px;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+}
+.short-num-input:focus, .header-text-input:focus {
+  border-color: #f38ba8;
+}
+.header-text-input {
+  width: 100px;
+  background-color: #181825;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  color: #cdd6f4;
+  padding: 4px 8px;
+  font-size: 13px;
+  outline: none;
+}
+.input-label {
+  font-weight: bold;
+  color: #red;
+  font-size: 13px;
+}
+
+  /* メモ帳ウィンドウ用テキストエリア */
+  .memo-textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    color: #cdd6f4;
+    border: none;
+    outline: none;
+    resize: none; /* 親のwindowサイズ変更に完全連動させる */
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+/* 秘匿情報エリアのスタイル（通常表示） */
+.secret-box {
+  margin-top: 8px;
+  background-color: #2a1b24;
+  border: 1px solid #f38ba8;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 12px;
+}
+.secret-title {
+  font-weight: bold;
+  color: #f38ba8;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed #f38ba8;
+  padding-bottom: 4px;
+}
+.secret-content {
+  color: #f5e0dc;
+}
+.secret-item {
+  margin-bottom: 4px;
+}
+.secret-item:last-child {
+  margin-bottom: 0;
+}
+
+</style>
+</head>
+<body>
+
+
+<div class="toolbar">
+  <input type="file" id="multiJsonInput" accept=".json" multiple style="display:none;" onchange="loadMultipleJSONs(event)">
+  <button onclick="document.getElementById('multiJsonInput').click()">📂 キャラデータを読み込む</button>
+  <button onclick="createMemoWindow()">📝メモを追加</button>
+
+<a href="https://ienrf.github.io/Paranoia-Charactor-Sheet/" target="_blank" rel="noopener noreferrer" class="btn-link">
+  キャラクターシート
+</a>
+
+</div>
+
+
+<script>
+
+let highestZIndex = 100;
+let windowOffset = 0;
+
+const specialtyData = {
+  management: ['靴舐め','鉄仮面','詐術','衛生管理','尋問','脅迫','見定め','雄弁術'],
+  stealth: ['隠匿','変装','厳戒','セキュリティシステム','尾行','手業','隠密','監視'],
+  violence: ['エネルギー兵器【必須】', '敏捷','爆破','フィールド兵器','精密作業','白兵戦武器','射出兵器','投擲武器','格闘','車両戦闘'],
+  hardware: ['ボット運用','化学工学','電子工学','環境工学','機械工学','核工学','重機操作','車両運用','装備保守'],
+  software: ['ボットプログラミング','C-Bay(ネットオークション)','暗号','データ分析','データ検索','金融システム','ハッキング','マルチコーダー運用','オペレーティングシステム','車両プログラミング'],
+  wetware: ['生体工学','生命兵器','クローン技術','医学','アウトドア知識','薬物療法','心理療法','暗示']
+};
+
+const mainSkillLabels = {
+  management: 'マネジメント',
+  stealth: 'ステルス',
+  violence: 'バイオレンス',
+  hardware: 'ハードウェア',
+  software: 'ソフトウェア',
+  wetware: 'ウェットウェア'
+};
+
+// 汎用ウィンドウ生成関数
+function createWindow(title, bodyHTML, defaultWidth = 280, defaultHeight = 300) {
+  const win = document.createElement('div');
+  win.className = 'window';
+
+  // 画面中央付近に少しずつずらして配置
+  const posX = 30 + (windowOffset % 10) * 25;
+  const posY = 70 + (windowOffset % 10) * 25;
+  windowOffset++;
+
+  win.style.left = posX + 'px';
+  win.style.top = posY + 'px';
+  win.style.width = defaultWidth + 'px';
+  win.style.height = defaultHeight + 'px';
+  win.style.zIndex = ++highestZIndex;
+
+  win.innerHTML = `
+    <div class="window-header">
+      <span>${title}</span>
+      <button class="close-btn" onclick="this.closest('.window').remove()">×</button>
+    </div>
+    <div class="window-body">
+      ${bodyHTML}
+    </div>
+  `;
+
+  // ウインドウをクリックしたら最前面に移動
+  win.addEventListener('mousedown', () => {
+    win.style.zIndex = ++highestZIndex;
+  });
+
+  // ヘッダーをドラッグした時の移動処理
+  const header = win.querySelector('.window-header');
+  makeDraggable(win, header);
+
+  document.body.appendChild(win);
+  return win;
+}
+
+// ウインドウのドラッグ移動処理
+function makeDraggable(win, header) {
+  let isDragging = false;
+  let startX, startY, initialLeft, initialTop;
+
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('close-btn')) return;
+
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    initialLeft = win.offsetLeft;
+    initialTop = win.offsetTop;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+
+  function onMouseMove(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let newTop = initialTop + dy;
+    let newLeft = initialLeft + dx;
+
+    // 上方向の移動制限（ツールバーの高さ 50px より上に行かないように設定）
+    const minTop = 50;
+    if (newTop < minTop) {
+      newTop = minTop;
+    }
+
+    // 画面下部に消え切らないための制限
+    const maxTop = window.innerHeight - 40;
+    if (newTop > maxTop) {
+      newTop = maxTop;
+    }
+
+    win.style.top = newTop + 'px';
+    win.style.left = newLeft + 'px';
+  }
+
+  function onMouseUp() {
+    isDragging = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+}
+
+// 複数JSONファイルの読み込み処理
+function loadMultipleJSONs(event) {
+  const files = event.target.files;
+  if (!files.length) return;
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        const isFull = file.name.includes('_full') || !file.name.includes('_public');
+        createCharacterWindow(data, isFull);
+      } catch (err) {
+        console.error('ファイル読み込み失敗:', file.name);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  event.target.value = '';
+}
+
+// キャラクターウィンドウ生成
+function createCharacterWindow(data, isFull = true) {
+  const name = data.charName || '名無し';
+  const clearance = data.clearance || 'R';
+  const sector = data.sector || '???';
+  const clone = data.cloneNum || '1';
+
+  const topInputsHTML = `
+    <div class="header-inputs">
+      <span class="input-label">n:</span>
+      <input type="number" class="short-num-input" placeholder="0">
+      <input type="text" class="header-text-input" placeholder="MBD">
+    </div>
+  `;
+
+  // 技能一覧の組み立て
+  let skillsHTML = '';
+
+  const serviceGroup = data.serviceGroup || '未選択';
+  skillsHTML += `
+    <div class="main-skill-group">
+      <div class="main-skill-title">サービスグループ: ${serviceGroup}</div>
+    </div>
+  `;
+
+  Object.keys(mainSkillLabels).forEach(mainKey => {
+    const label = mainSkillLabels[mainKey];
+    const mainVal = Number(data[mainKey]) || 0;
+    
+    // 子要素（変動のある分野技能）を判定して作成
+    let subSkillsHTML = '';
+    const specs = specialtyData[mainKey] || [];
+    
+    specs.forEach(specName => {
+      let state = 0;
+      if (data.specialtyStates && data.specialtyStates.hasOwnProperty(specName)) {
+        state = Number(data.specialtyStates[specName]) || 0;
+      } else if (specName.includes('エネルギー兵器')) {
+        state = 1; // 補正保存のないデータ用の初期値対応
+      }
+
+      // トグル変更（state !== 0）されている技能のみ親の下に表示
+      if (state !== 0) {
+        let finalVal = mainVal;
+        if (state === 1) finalVal = mainVal + 4;
+        else if (state === 2) finalVal = mainVal + 8;
+        else if (state === 3) finalVal = 1;
+
+        subSkillsHTML += `<div class="sub-skill">┗ ${specName}: ${finalVal}</div>`;
+      }
+    });
+
+    skillsHTML += `
+      <div class="main-skill-group">
+        <div class="main-skill-title">${label}: ${mainVal}</div>
+        ${subSkillsHTML}
+      </div>
+    `;
+  });
+
+// 2. 秘匿情報（isFull の時のみ）
+if (isFull) {
+    const societyText = data.secretSociety || 'なし';
+    
+    // 6つのキー（3ペア）を配列として整理
+    const secretSkillPairs = [
+      { name: data.secretSkill_unusual, val: data.secretVal_unusual },
+      { name: data.secretSkill_unnecessary, val: data.secretVal_unnecessary },
+      { name: data.secretSkill_unhealthy, val: data.secretVal_unhealthy }
+    ];
+
+    let secretSkillHTML = '';
+    
+    // 入力されている技能名のみをループ処理で取得
+    secretSkillPairs.forEach(item => {
+      if (item.name) {
+        const valDisplay = (item.val !== undefined && item.val !== '') ? `: ${item.val}` : '';
+        secretSkillHTML += `<div class="sub-skill">┗ ${item.name}${valDisplay}</div>`;
+      }
+    });
+
+    // 以前の単一フィールド形式のデータが来た場合のフォールバック処理
+    if (!secretSkillHTML) {
+      const sName = data.secretSkillName || data.secretSkill || '';
+      const sVal = data.secretSkillValue || data.secretSkillVal || '';
+      if (sName) {
+        const valDisplay = (sVal !== undefined && sVal !== '') ? `: ${sVal}` : '';
+        secretSkillHTML = `<div class="sub-skill">┗ ${sName}${valDisplay}</div>`;
+      }
+    }
+
+    skillsHTML += `
+      <div class="main-skill-group">
+        <div class="main-skill-title">${societyText}</div>
+        ${secretSkillHTML}
+      </div>
+    `;
+
+    // (4) ミュータントパワー（技能欄の一番下）
+    const powerText = data.mutantPower || 'なし';
+    skillsHTML += `
+      <div class="main-skill-group">
+        <div class="main-skill-title">ミュータントパワー: ${powerText}</div>
+      </div>
+    `;
+  }
+
+  let apInputsHTML = '';
+  if (isFull) {
+    apInputsHTML = `
+    <div class="ap-inputs" style="margin-top: 8px;">
+      <span class="input-label">A:</span>
+      <input type="number" class="short-num-input" placeholder="0">
+      <span class="input-label" style="margin-left: 8px;">P:</span>
+      <input type="number" class="short-num-input" placeholder="0">
+    </div>
+  `;
+  }
+
+  // 2. メモ欄の組み立て（通常メモ → 秘匿メモの順）
+  let memoHTML = '';
+  
+  // 通常メモ（公開メモ）
+  const publicMemoText = data.memo || data.publicMemo || '';
+  if (publicMemoText) {
+    memoHTML += `<div><b>メモ:</b><br>${data.memo.replace(/\n/g, '<br>')}</div>`;
+  }
+
+  // 秘匿メモ（isFullの時のみ通常メモの下に配置）
+  if (isFull) {
+    const secretMemoText = data.secretmemo || '';
+    if (secretMemoText) {
+      if (memoHTML) memoHTML += `<div style="margin-top: 6px;"></div>`;
+      memoHTML += `<div><b>秘匿:</b><br>${secretMemoText.replace(/\n/g, '<br>')}</div>`;
+    }
+  }
+
+  if (memoHTML) {
+    memoHTML = `<hr class="divider">${memoHTML}`;
+  }
+
+  const title = `📄 ${name}-${clearance}-${sector}-${clone}`;
+  const bodyHTML = `
+    <div class="char-info">
+      ${topInputsHTML}
+      <div class="skill-container">
+        ${skillsHTML}
+      </div>
+      ${apInputsHTML}
+      ${memoHTML}
+    </div>
+  `;
+
+  createWindow(title, bodyHTML, 300, 420);
+}
+
+// メモウィンドウ生成
+function createMemoWindow() {
+  const bodyHTML = `<textarea class="memo-textarea" placeholder="プレイ時のメモ欄"></textarea>`;
+  createWindow('📝 メモ', bodyHTML, 250, 200);
+}
+</script>
+
+</body>
+</html>
