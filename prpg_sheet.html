@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パラノイア キャラクターシート出力ツール</title>
+<style>
+  /* サイトの見た目を整えるデザイン（CSS） */
+  body { font-family: sans-serif; background-color: #333; color: #333; padding: 20px;}
+  .container { background-color: #fff; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); border-top: 5px solid #000; }
+  h1 { text-align: center; color: #000; font-size: 24px; border-bottom: 2px solid #ccc; padding-bottom: 10px;}
+  h3 { margin-top: 15px; margin-bottom: 10px; font-size: 15px; border-left: 4px solid #000; padding-left: 8px; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px;}
+  .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+  .flex-row { display: flex; gap: 10px; }
+  .box-name { flex: 1; }           /* 名前：残りのスペースを全部使う */
+  .box-clear { width: 70px; }     /* クリアランス：文字が収まる幅に固定 */
+  .box-sector { width: 60px; }     /* セクター：短めに固定 */
+  .box-clone { width: 50px; }      /* クローン：短めに固定 */
+  .box-clear label, .box-sector label, .box-clone label {
+    font-size: 11px; /* 元は14px。数字を小さくするとさらに小さくなります */
+  }
+  .btn { display: block; width: 100%; padding: 15px; background-color: #000; color: #fff; text-align: center; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; transition: 0.3s; }
+  .btn:hover { background-color: #444; }
+  .note { font-size: 12px; color: #666; margin-top: 5px; }
+
+/* サービスグループ説明用インフォアイコン */
+  .info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: help;
+    font-size: 14px;
+    color: #555;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .info-icon:hover {
+    background-color: #ddd;
+    color: #000;
+  }
+
+  /* 技能セクションと総合計値のスタイル */
+  .skills-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+  }
+  .skills-header h2 { margin: 0; font-size: 14px; }
+  .total-display { font-weight: bold; font-size: 14px; color: #333; }
+  
+/* 右側にまとめる操作用エリア */
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  /* 41以上で赤く表示するためのクラス */
+  .over-limit {
+    color: #e53935;
+    font-weight: bold;  
+  }
+
+  .dice-btn {
+    width: auto;
+    padding: 6px 10px;
+    background-color: #75e275;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.2s;
+  }
+  .dice-btn:hover { background-color: #72bd72; }
+
+.dice-btn-blue {
+    background-color: #1e88e5;
+  }
+  .dice-btn-blue:hover { background-color: #1565c0; }
+
+
+/*主要技能と分野技能の枠組みスタイル */
+  .skill-block {
+    background-color: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .skill-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .input-small {
+    width: 50px !important; /* ボックスの横幅を小さく固定 */
+    text-align: center;
+  }
+  .specialty-container {
+    margin-top: 8px;
+    padding-left: 12px;
+    border-left: 2px solid #ccc; /* 親技能の配下であることが分かる縦線 */
+  }
+  .specialty-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .specialty-item input[type="text"],
+  .specialty-item select {
+    flex: 1;
+    padding: 6px;
+border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+
+/* 矢印ボタンのスタイル */
+  .arrow-btn {
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    transition: all 0.2s;
+    min-width: 28px;
+    text-align: center;
+  }
+  .arrow-btn:hover { background-color: #ddd; }
+  
+  /* 状態ごとの色変化（上向き: 緑 / 下向き: 赤） */
+  .arrow-btn[data-state="1"] { color: #2e7d32; background-color: #e8f5e9; border-color: #a5d6a7; }
+  .arrow-btn[data-state="2"] { color: #1565c0; background-color: #e3f2fd; border-color: #90caf9; }
+  .arrow-btn[data-state="3"] { color: #c62828; background-color: #ffebee; border-color: #ef9a9a; }
+  
+
+/* 秘密情報領域（2ページ目）のスタイル */
+  .container-secret {
+    margin-top: 30px;
+    border-top: 5px solid #333;
+  }
+  .secret-warning {
+    background-color: #ffebee;
+    border: 1px solid #ffcdd2;
+    color: #c62828;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Paranoia CharactorSheet</h1>
+  
+  <div class="form-group flex-row">
+    <div class="box-name">
+      <label>名前</label>
+      <input type="text" id="charName" placeholder="例: ジョーダン">
+    </div>
+    <div class="box-clear">
+      <label>クリアランス</label>
+      <select id="clearance"style="color: red; font-weight: bold;" onchange="this.style.color = this.options[this.selectedIndex].style.color;">
+        <option value="IR" style="color: #333;">IR</option>
+        <option value="R" style="color: red;" selected>R</option>
+        <option value="O" style="color: #f57c00;">O</option>
+        <option value="Y" style="color: #cda400;">Y</option>
+        <option value="G" style="color: green;">G</option>
+        <option value="B" style="color: blue;">B</option>
+        <option value="I" style="color: indigo;">I</option>
+        <option value="V" style="color: purple;">V</option>
+        <option value="U" style="color: #333;">UV</option>
+      </select>
+    </div>
+    <div class="box-sector">
+      <label>セクター</label>
+      <input type="text" id="sector" placeholder="WWW">
+    </div>
+    <div class="box-clone">
+      <label>クローン</label>
+      <select id="cloneNum">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7"  style="color: #ccc;">7</option>
+        <option value="8"  style="color: #ccc;">8</option>
+        <option value="9"  style="color: #ccc;">9</option>
+      </select>
+    </div>
+  </div>
+
+<!-- 所属サービスグループエリア -->
+  <div class="form-group">
+    <label>所属サービスグループ</label>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <select id="serviceGroup" style="flex: 1;" onchange="updateServiceGroupDesc()">
+        <option value="">▼ サービスグループを選択</option>
+        <option value="Army">軍部局 (Army)</option>
+        <option value="CPU">中央処理省 (CPU)</option>
+        <option value="HPD&MC">住環境精神統制局 (HPD&MC)</option>
+        <option value="IntSec_out">内務公安局 (IntSec)</option>
+        <option value="IntSec_in">内務公安局 (IntSec) の本体業務</option>
+        <option value="PLC">生産搬送配給局 (PLC)</option>
+        <option value="Power">動力局 (Power)</option>
+        <option value="R&D">研究設計局 (R&D)</option>
+        <option value="Tech">技術局 (Tech)</option>
+        <option value="survisSpy">産業スパイ 又は 破壊工作員</option>
+      </select>
+      <button type="button" class="dice-btn" onclick="rollServiceGroup()">🎲</button>
+      <button type="button" class="info-icon" onclick="toggleServiceGroupDesc()">ⓘ</button>
+    </div>
+    <div id="serviceGroupDesc" style="display: none; margin-top: 8px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; white-space: pre-wrap; color: #333;"></div>
+  </div>
+  
+<!-- 技能見出しと表示切り替えエリア -->
+  <div class="skills-header">
+    <h3>技能</h3>
+    <!-- 自分で割り振るモード時に表示 -->
+    <div class="header-controls">
+    <div id="totalDisplayArea" class="total-display"><span id="grandTotal">0/40</span></div>
+      <button class="dice-btn dice-btn-blue" onclick="rollDiceSkills('half')" title="(1d20/2)>4">🎲</button>
+    </div>
+    </div>
+  <!-- 行動系技能 -->
+  <label>行動系技能</label>
+
+  <div class="skill-block">
+    <div class="skill-main">
+      <span>マネジメント</span>
+      <input type="number" id="management" value="0" class="input-small" oninput="calcTotals(); updateAllSpecialtyValues();">
+    </div>
+    <div id="spec-management" class="specialty-container"></div>
+    
+  </div>
+ 
+  <div class="skill-block">
+    <div class="skill-main">
+      <span>ステルス</span>
+      <input type="number" id="stealth" value="0" class="input-small" oninput="calcTotals(); updateAllSpecialtyValues();">
+    </div>
+    <div id="spec-stealth" class="specialty-container"></div>
+    
+  </div>
+
+  <div class="skill-block">
+    <div class="skill-main">
+      <span>バイオレンス</span>
+      <input type="number" id="violence" value="0" class="input-small" oninput="calcTotals(); updateAllSpecialtyValues();">
+    </div>
+    <div id="spec-violence" class="specialty-container"></div>
+    
+  </div>
+
+  <!-- 知識系技能 -->
+  <label>知識系技能</label>
+ 
+  <div class="skill-block">
+    <div class="skill-main">
+      <span>ハードウェア</span>
+      <input type="number" id="hardware" value="0" class="input-small" oninput="calcTotals(); updateAllSpecialtyValues();">
+    </div>
+    <div id="spec-hardware" class="specialty-container"></div>
+    
+  </div>
+
+  <div class="skill-block">
+    <div class="skill-main">
+      <span>ソフトウェア</span>
+      <input type="number" id="software" value="0" class="input-small" oninput="calcTotals(); updateAllSpecialtyValues();">
+    </div>
+    <div id="spec-software" class="specialty-container"></div>
+    
+  </div>
+
+  <div class="skill-block">
+    <div class="skill-main">
+      <span>ウェットウェア</span>
+      <input type="number" id="wetware" value="0" class="input-small" oninput="calcTotals(); updateAllSpecialtyValues();">
+    </div>
+    <div id="spec-wetware" class="specialty-container"></div>
+    
+  </div>
+
+  <div class="form-group" style="margin-top: 25px;">
+    <label>メモ・癖</label>
+    <textarea id="memo" rows="6" placeholder="メモや癖など"></textarea>
+  </div>
+
+</div>
+
+<!-- 2枚目のカード（秘密情報領域）の始まり -->
+<div class="container container-secret">
+  <div class="secret-warning">
+    Paranoia CharactorSheet 裏面
+  </div>
+  
+  <div class="form-group">
+    <label>ミュータント・パワー</label>
+　　　<div style="display: flex; gap: 8px;">
+    <select id="mutantPower" style="flex:1;">
+      <option value="">▼ パワーを選択</option>
+      <option value="吸収">吸収 / Absorption</option>
+      <option value="強酸血液">強酸血液 / Acidic Blood</option>
+      <option value="皮膚粘着">皮膚粘着 / Adhesive Skin</option>
+      <option value="火事場力">火事場力 / Adrenalin Control</option>
+      <option value="弾性体化">弾性体化 / Bouncy</option>
+      <option value="官僚直感">官僚直感 / Bureaucratic Intuition</option>
+      <option value="皮膚迷彩">皮膚迷彩 / Chameleon</option>
+      <option value="魅了">魅了 / Charm</option>
+      <option value="腐食">腐食 / Corrosion</option>
+      <option value="超常能力模写">超常能力模写 / Copy Murant Power</option>
+      <option value="物体氷結">物体氷結 / Cryokinesis</option>
+      <option value="死体擬態">死体擬態 / Death Simulation</option>
+      <option value="超絶頭脳">超絶頭脳 / Deep Thought</option>
+      <option value="物体通過">物体通過 / Desolidity</option>
+      <option value="超常能力探知">超常能力探知 / Detect Mutant Power</option>
+      <option value="凶運誘引">凶運誘引 / Doom Magnet</option>
+      <option value="電撃">電撃 / Electroshock</option>
+      <option value="感情共有">感情共有 / Empathy</option>
+      <option value="共感甘言">共感甘言 / Empathic Liar</option>
+      <option value="力場">力場 / Energy Field</option>
+      <option value="電力抑圧">電力抑圧 / Energy Suppression</option>
+      <option value="別人格">別人格 / Evil Twin</option>
+      <option value="巨大化">巨大化 / Growth</option>
+      <option value="超肺活量">超肺活量 / Hurricane Lungs</option>
+      <option value="五感増幅">五感増幅 / Hypersenses</option>
+      <option value="超高速化">超高速化 / Hyperspeed</option>
+      <option value="赤外線視">赤外線視 / Infravision</option>
+      <option value="不可視化">不可視化 / Invisibility</option>
+      <option value="光線反射">光線反射 / Laser Reflection</option>
+      <option value="空中浮遊">空中浮遊 / Levitation</option>
+      <option value="朧生成">朧生成 / Haze</option>
+      <option value="墨汁噴射">墨汁噴射 / Ink Spray</option>
+      <option value="機械共感">機械共感 / Machine Empathy</option>
+      <option value="物体磁化">物体磁化 / Magnetise</option>
+      <option value="超雑食">超雑食 / Matter Eater</option>
+      <option value="機械直感">機械直感 / Mechanical Intuition</option>
+      <option value="精神破壊">精神破壊 / Mental Blast</option>
+      <option value="非ミュータント">非ミュータント</option>
+      <option value="変身">変身 / Polymorphism</option>
+      <option value="傀儡師">傀儡師 / Puppeteer</option>
+      <option value="超常能力増幅">超常能力増幅 / Push Mutant Power</option>
+      <option value="第六感像">第六感像 / Psychic Flash</option>
+      <option value="物体発火">物体発火 / Pyrokinesis</option>
+      <option value="自己再生">自己再生 / Regeneration</option>
+      <option value="弾性骨格">弾性骨格 / Rubbery Bones</option>
+      <option value="小人化">小人化 / Shrinking</option>
+      <option value="潤滑皮脂">潤滑皮脂 / Slippery Skin</option>
+      <option value="悪臭">悪臭 / Stench</option>
+      <option value="四肢伸縮">四肢伸縮 / Stretchy</option>
+      <option value="監視直感">監視直感 / Surveillance Intuition</option>
+      <option value="念動力">念動力 / Telekinesis</option>
+      <option value="瞬間移動">瞬間移動 / Teleportation</option>
+      <option value="毒物代謝">毒物代謝 / Toxic Metabolism</option>
+      <option value="物体変化">物体変化 / Transmutation</option>
+      <option value="豪運">豪運 / Uncanny</option>
+      <option value="吸血鬼">吸血鬼 / Vampire</option>
+      <option value="腹話術師">腹話術師 / Ventriloquist</option>
+      <option value="X線視">X線視 / X-Ray Vision</option>
+    </select>
+      <button type="button" class="dice-btn" onclick="rollMutantPower()" title="1d20を2回振ってパワーを決定">🎲</button>
+    </div>
+  </div>
+
+<div class="form-group">
+    <label>秘密結社</label>
+    <div style="display: flex; gap: 8px;">
+      <!-- 手動選択時も即時に推奨・強制技能をハイライト表示 -->
+      <select id="secretSociety" style="flex:1;" onchange="updateSecretSkillHighlights();">
+        <option value="">▼ 秘密結社を選択</option>
+        <option value="amu">アンチ・ミュータント</option>
+        <option value="comm">コミュニスト</option>
+        <option value="cfr">コンピュータ・フリークス</option>
+        <option value="cm">コルポレ・メタル</option>
+        <option value="dre">デス・レパード</option>
+        <option value="fcc">FCCC-P（第一教会）</option>
+        <option value="fd">フランケンシュタイン・デストロイヤーズ</option>
+        <option value="fe">フリー・エンタープライズ</option>
+        <option value="hu">ヒューマニスト</option>
+        <option value="iru">イルミナティ (潜入"先"の秘密技能を参照)</option>
+        <option value="mis">ミスティクス</option>
+        <option value="プロ・テック">プロ・テック</option>
+        <option value="サイオン">サイオン</option>
+        <option value="pur">パージ</option>
+        <option value="ro">ロマンティクス</option>
+        <option value="sic">シエラ・クラブ</option>
+        <option value="kessyaother">その他 (gmに委ねる)</option>
+        <option value="kessyaspy">秘密スパイ (潜入"元"の秘密技能を参照)</option>
+      </select>
+      <button type="button" class="dice-btn" onclick="rollSecretSociety(true)" title="所属サービスグループに依る決定表">🎲</button>
+      <button type="button" class="dice-btn dice-btn-blue" onclick="rollSecretSociety(false)" title="完全ランダム">🎲</button>
+    </div>
+    <div class="note">※サービスグループでスパイの方は本来のサービスグループを一時的に選んだ状態でダイスを振ってください。</div>
+  </div>
+
+<!-- 秘密技能エリア -->
+<div class="form-group" style="margin-top: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="font-weight: bold; font-size: 15px; margin: 0;">秘密技能</h3>
+    <button type="button" class="dice-btn" onclick="rollSecretSkills()" title="1d20">🎲</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+    
+    <!-- 非日常 -->
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span style="width: 65px; font-weight: bold; font-size: 14px;">非日常</span>
+      <select id="secretSkill_unusual" style="flex: 1;">
+        <option value="">▼ 秘密技能を選択</option>
+      </select>
+      <input type="number" id="secretVal_unusual" class="input-small" value="0" min="0" max="20" style="width: 50px;" placeholder="値">
+    </div>
+
+    <!-- 不要 -->
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span style="width: 65px; font-weight: bold; font-size: 14px;">不要</span>
+      <select id="secretSkill_unnecessary" style="flex: 1;">
+        <option value="">▼ 秘密技能を選択</option>
+      </select>
+      <input type="number" id="secretVal_unnecessary" class="input-small" value="0" min="0" max="20" style="width: 50px;" placeholder="値">
+    </div>
+
+    <!-- 不健全 -->
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span style="width: 65px; font-weight: bold; font-size: 14px;">不健全</span>
+      <select id="secretSkill_unhealthy" style="flex: 1;">
+        <option value="">▼ 秘密技能を選択</option>
+      </select>
+      <input type="number" id="secretVal_unhealthy" class="input-small" value="0" min="0" max="20" style="width: 50px;" placeholder="値">
+    </div>
+<div class="note">※♯付き技能は一般的分野から同名の分野の成功値を持ってきてください。</div>
+  </div>
+</div>
+
+  <div class="form-group">
+    <label>秘匿メモ</label>
+    <textarea id="secretmemo" rows="6" placeholder="あなたがスパイであること、秘密結社に関連すること、など"></textarea>
+  </div>
+
+</div>
+
+<!-- JSON保存・読み込みボタン -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+  <button type="button" onclick="exportCharacterJSON(true)" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">💾 キャラデータを保存</button>
+  <button type="button" onclick="exportCharacterJSON(false)" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">📄 公開データのみ保存</button>
+  <button type="button" onclick="document.getElementById('jsonFileInput').click()" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">📂 キャラデータを読み込み</button>
+<button onclick="window.open('https://ienrf.github.io/Paranoia-Charactor-Sheet/prpg_view.html', '_blank')">プレイ画面へ</button>
+
+  <!-- 非表示のファイル選択インプット -->
+  <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="importCharacterJSON(event)">
+</div>
+
+<script>
+
+/* サービスグループの説明データ定義 */
+const serviceGroupData = {
+  "Army": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【バ】爆破、エネルギー兵器、白兵戦武器、射出兵器、投擲武器、格闘、車両運用",
+  "CPU": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【ス】セキュリティシステム 【ハ】電子工学 【ソ】ボットプログラミング、データ分析、金融システム、データ検索、車両プログラミング",
+  "HPD&MC": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【マ】靴舐め、鉄仮面、詐術、見定め 【ハ】ボット運用 【ソ】マルチコーダー運用 【ウ】薬物療法、医学",
+  "IntSec_out": "IntSecから他のサービスグループにスパイとして出向く。なのでこれを選択した場合は潜入先のサービスグループを選択して、裏面にIntSecのスパイと記す。\nまたIntSecの本体業務を参照し、1つ一般的専門分野を弱点分野無しに習得する",
+  "IntSec_in": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【マ】尋問、脅迫 【ス】セキュリティシステム、監視 【バ】エネルギー兵器、白兵戦武器、格闘",
+  "PLC": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【マ】鉄仮面、詐術 【ハ】ボット運用、環境工学、重機操作、車両運用 【ソ】データ検索 【ウ】生命科学",
+  "Power": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【ハ】化学工学、電子工学、環境工学、機械工学、核工学 【ソ】データ分析、データ検索",
+  "R&D": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【ハ】化学工学、機械工学、核工学 【ソ】ボットプログラミング、車両プログラミング 【ウ】生物兵器、クローン技術",
+  "Tech": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【ハ】化学工学、電子工学、環境工学、車両運用、重機操作 【ソ】ボットプログラミング、車両プログラミング 【ウ】薬物療法",
+  "survisSpy": "どこかのサービスグループから別のどこかのサービスグループにスパイとして出向く。なので潜入先のサービスグループを選択して、裏面に産業スパイと記す。また本来のサービスグループを参照し、1つ一般的専門分野を弱点分野無しに習得する"
+};
+
+/* 選択されたサービスグループの説明テキストを更新 */
+function updateServiceGroupDesc() {
+  const select = document.getElementById('serviceGroup');
+  const descArea = document.getElementById('serviceGroupDesc');
+  const val = select.value;
+  if (val && serviceGroupData[val]) {
+    descArea.textContent = serviceGroupData[val];
+  } else {
+    descArea.textContent = "サービスグループを選択すると、ここに詳細説明が表示されます。";
+  }
+}
+
+/* ⓘボタン押下時に説明欄を開閉する処理 */
+function toggleServiceGroupDesc() {
+  const descArea = document.getElementById('serviceGroupDesc');
+  if (descArea.style.display === 'none' || descArea.style.display === '') {
+    updateServiceGroupDesc();
+    descArea.style.display = 'block';
+  } else {
+    descArea.style.display = 'none';
+  }
+}
+/* 1d10でサービスグループを決定する関数 */
+function rollServiceGroup() {
+  const d10 = Math.floor(Math.random() * 10) + 1;
+  const select = document.getElementById('serviceGroup');
+  if (select && select.options[d10]) {
+    select.selectedIndex = d10;
+    updateServiceGroupDesc();
+  }
+}
+
+/* ダイスで技能値を決定する関数（1d20 / 2、端数切り捨て、最低4） */
+  function rollDiceSkills(type) {
+    const skillIds = ['management', 'stealth', 'violence', 'hardware', 'software', 'wetware'];
+let values = [];
+    let sum = 0;
+
+    // 1. タイプ別にダイスを振る
+    for (let i = 0; i < 6; i++) {
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        let val = Math.floor(d20 / 2);
+        if (val < 4) val = 4;
+
+      values.push(val);
+      sum += val;
+    }
+
+    // 2. 合計が40を超えている間、ランダムに1ずつ削る
+      while (sum > 40) {
+      let randomIndex = Math.floor(Math.random() * 6);
+      if (values[randomIndex] > 4) {
+        values[randomIndex]--;
+        sum--;
+      }
+    }
+
+    // 3. 画面の入力欄にセットする
+    skillIds.forEach((id, index) => {
+      const el = document.getElementById(id);
+      if (el) el.value = values[index];
+    });
+
+    calcTotals(); // 再計算を実行
+    updateAllSpecialtyValues(); // 分野技能の一括更新を実行
+  }
+
+// 数値が入力されるたびに全6技能の総合計を計算して表示を変えるプログラム
+function calcTotals() {
+  const m = Number(document.getElementById('management').value) || 0;
+  const s = Number(document.getElementById('stealth').value) || 0;
+  const v = Number(document.getElementById('violence').value) || 0;
+  const h = Number(document.getElementById('hardware').value) || 0;
+  const sw = Number(document.getElementById('software').value) || 0;
+  const w = Number(document.getElementById('wetware').value) || 0;
+
+  // 6つの合計を算出
+  const totalSum = m + s + v + h + sw + w;
+  
+  const totalSpan = document.getElementById('grandTotal');
+  totalSpan.textContent = `${totalSum}/40`;
+  
+  // 41以上の場合は赤く表示（over-limitクラスを適用）
+  if (totalSum >= 41) {
+    totalSpan.classList.add('over-limit');
+  } else {
+    totalSpan.classList.remove('over-limit');
+  }
+}
+
+// 画面が開いたときに最初の計算を実行
+// 画面が開いた時に最初の計算と、分野技能の展開を両方行う
+window.onload = function() {
+  calcTotals();
+  initSpecialties();
+};
+
+/* 分野技能を最初からすべて展開して表示しておく関数 */
+  function initSpecialties() {
+    for (const [containerId, skills] of Object.entries(specialtyData)) {
+      const container = document.getElementById(containerId);
+      if (!container) continue;
+
+      skills.forEach(skill => {
+        const div = document.createElement('div');
+        div.className = 'specialty-item';
+
+        // エネルギー兵器のみ固定
+        const isEnergyWeapon = skill.includes('エネルギー兵器');
+        const initialState = isEnergyWeapon ? '1' : '0';
+        const initialText = isEnergyWeapon ? '↑' : '-';
+        const titleText ='↑一般的:+4 /⇈跳ね上げ:+8 /↓弱点:l1l'
+
+        div.innerHTML = `
+          <span class="spec-name" style="flex:1;">${skill}</span>
+          <input type="number" class="spec-val input-small" value="0" readonly>
+          <button type="button" class="arrow-btn" data-state="${initialState}"onclick="toggleArrow(this)" title="${titleText}">${initialText}</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+    updateAllSpecialtyValues();
+  }
+
+/* 矢印ボタンのクリック処理 */
+  function toggleArrow(btn) {
+    let state = Number(btn.getAttribute('data-state')) || 0;
+    state = (state + 1) % 4;
+    btn.setAttribute('data-state', state);
+
+    if (state === 0) {
+      btn.textContent = '-';
+    } else if (state === 1) {
+      btn.textContent = '↑';
+    } else if (state === 2) {
+      btn.textContent = '⇈';
+    } else if (state === 3) {
+      btn.textContent = '↓';
+    }
+
+    updateAllSpecialtyValues();
+  }
+
+  /* 親技能の値と矢印の状態に合わせて全分野技能の値を一括更新する関数 */
+  function updateAllSpecialtyValues() {
+    for (const [containerId, skills] of Object.entries(specialtyData)) {
+      // 例: 'spec-management' から 'management' のIDを取得
+      const mainSkillId = containerId.replace('spec-', '');
+      const mainEl = document.getElementById(mainSkillId);
+      const mainVal = mainEl ? Number(mainEl.value) || 0 : 0;
+      
+      const container = document.getElementById(containerId);
+      if (!container) continue;
+
+      const items = container.querySelectorAll('.specialty-item');
+      items.forEach(item => {
+        const btn = item.querySelector('.arrow-btn');
+        const valInput = item.querySelector('.spec-val');
+        if (!btn || !valInput) return;
+
+        const state = Number(btn.getAttribute('data-state')) || 0;
+        let finalVal = mainVal; // 基本は親技能と同じ値
+
+        if (state === 1) {
+          finalVal = mainVal + 4; // ▲ 上向き: 親技能 + 4
+        } else if (state === 2) {
+          finalVal = mainVal + 8; // △: 親技能 + 8
+        } else if (state === 3) {
+          finalVal = 1;          // ▼ 下向き: 親技能の値に関わらず「1」に固定
+        }
+
+        valInput.value = finalVal;
+      });
+    }
+  }
+
+/* 各技能に属する分野技能のリストを定義 */
+  const specialtyData = {
+    'spec-management': ['靴舐め','鉄仮面','詐術','衛生管理','尋問','脅迫','見定め','雄弁術'],
+    'spec-stealth': ['隠匿','変装','厳戒','セキュリティシステム','尾行','手業','隠密','監視'],
+    'spec-violence': ['エネルギー兵器【必須】', '敏捷','爆破','フィールド兵器','精密作業','白兵戦武器','射出兵器','投擲武器','格闘','車両戦闘'],
+    'spec-hardware': ['ボット運用','化学工学','電子工学','環境工学','機械工学','核工学','重機操作','車両運用','装備保守'],
+    'spec-software': ['ボットプログラミング','C-Bay(ネットオークション)','暗号','データ分析','データ検索','金融システム','ハッキング','マルチコーダー運用','オペレーティングシステム','車両プログラミング'],
+    'spec-wetware': ['生体工学','生命兵器','クローン技術','医学','アウトドア知識','薬物療法','心理療法','暗示']
+  };
+
+/* ミュータント・パワー決定表 */
+  const mutantPowerMatrix = [
+    /* 1 */ ["非ミュータント","魅了","超常能力探知","感情共有","五感増幅","豪運","傀儡師","腹話術師","官僚直感","死体擬態","超絶頭脳","機械直感","超常能力増幅","凶運誘引","第六感像", "別人格","監視直感","共感甘言","超常能力模写","機械共感"],
+    /*2(1*/ ["非ミュータント","魅了","超常能力探知","感情共有","五感増幅","豪運","傀儡師","腹話術師","官僚直感","死体擬態","超絶頭脳","機械直感","超常能力増幅","凶運誘引","第六感像", "別人格","監視直感","共感甘言","超常能力模写","機械共感"],
+    /* 3 */ ["腐食","電撃","力場","精神破壊","物体発火","念動力","X線視","吸収","火事場力","弾性体化","朧生成","物体磁化","物体氷結","瞬間移動","光線反射","超高速化","赤外線視","不可視化","電力抑圧","機械共感"],
+    /* 4 */ ["空中浮遊","超雑食","変身","潤滑皮脂","自己再生","吸血鬼","小人化","物体変化","巨大化","皮膚迷彩","物体通過","毒物代謝","皮膚粘着","弾性骨格","悪臭","四肢伸縮","強酸血液","墨汁噴射","超肺活量","機械共感"]
+  ];
+
+  /* Mパワー決定ダイス処理 */
+  function rollMutantPower() {
+    // 1d20 を2回振る（1〜20）
+    const d1 = Math.floor(Math.random() * 4) + 1;
+    const d2 = Math.floor(Math.random() * 20) + 1;
+
+    // 縦軸（d1）× 横軸（d2）
+    const selectedRow = mutantPowerMatrix[d1 - 1];
+    if (!selectedRow) return;
+    const powerName = selectedRow[d2 - 1];
+
+    // プルダウンの値を変更
+    const select = document.getElementById('mutantPower');
+    if (select && powerName) {
+      select.value = powerName;
+    }
+  }
+
+/* 秘密結社一覧（完全ランダム用） */
+const allSecretSocieties = [
+  "amu","comm","cfr","cm","dre","fcc","fd","fe","hu","iru","mis","プロ・テック","サイオン","pur","ro","sic","kessyaother","kessyaspy",
+];
+
+/* サービスグループ別 秘密結社決定表（例: 1d20やダイス出目に対応する配列データ） */
+const societyMatrixByGroup = {
+  
+  "Army": ["amu","dre","fd","pur","comm","fcc","fe","プロ・テック","サイオン","iru","kessyaother","kessyaspy"],
+  "CPU": ["cfr","cm","fcc","sic","amu","comm","プロ・テック","サイオン","pur","iru","kessyaother","kessyaspy"],
+  "HPD&MC": ["amu","fcc","hu","ro","sic","comm","mis","サイオン","pur","iru","kessyaother","kessyaspy"],
+  "IntSec_out": ["amu","dre","fcc","fd","comm","fe","プロ・テック","サイオン","pur","iru","kessyaother","kessyaspy"],
+  "IntSec_in": ["amu","dre","fcc","fd","comm","fe","プロ・テック","サイオン","pur","iru","kessyaother","kessyaspy"],
+  "PLC": ["fe","hu","mis","ro","comm","プロ・テック","サイオン","sic","iru","kessyaother","kessyaspy"],
+  "Power": ["cfr","dre","fcc","fd","fe","mis","プロ・テック","pur","comm","iru","kessyaother","kessyaspy"],
+  "R&D": ["cfr","cm","プロ・テック","サイオン","pur","fcc","comm","iru","kessyaother","kessyaspy"],
+  "Tech": ["cfr","cm","dre","fd","mis","プロ・テック","サイオン","sic","comm","iru","kessyaother","kessyaspy"],
+  "survisSpy": ["comm","kessyaspy"]
+};
+
+/* 秘密結社ダイス決定関数 */
+function rollSecretSociety(isLinked) {
+  const select = document.getElementById('secretSociety');
+  
+  if (isLinked) {
+    const serviceGroup = document.getElementById('serviceGroup').value;
+    const table = societyMatrixByGroup[serviceGroup];
+    
+    // サービスグループが選択されている場合はテーブルを参照
+    if (serviceGroup && table && table.length > 0) {
+      const randomIndex = Math.floor(Math.random() * table.length);
+      select.value = table[randomIndex];
+    } else {
+      // 未選択状態などの場合は完全ランダムにフォールバック
+      const randomIndex = Math.floor(Math.random() * allSecretSocieties.length);
+      select.value = allSecretSocieties[randomIndex];
+    }
+  } else {
+    // 完全ランダム処理
+    const randomIndex = Math.floor(Math.random() * allSecretSocieties.length);
+    select.value = allSecretSocieties[randomIndex];
+  }
+  updateSecretSkillHighlights();
+}
+
+/* 秘密分野技能データ */
+const secretSkillsData = {
+  unusual: ["ミュータントパワー学","クレジットハック","爆破#","サイボーグ技術","アルファコンプレックス史","価格交渉","「体」術","ドラッグ調達","実験的装備補修維持","旧算記録学","サバイバル術","自然知識","旅行"],
+  unnecessary: ["漫画トリビア","電子計算機業界用語","トラクター維持管理","ボット判別","アクション映画","パーティ知識","典礼学","道具作成系技能","広告とマーケティング","ホビー","言語","瞑想","ビデオゲーム","嘲笑","料理","編み物","音楽","バードウォッチング","植物学","動物の痕跡認識","その他"],
+  unhealthy: ["身振符牒","ハッキング#","プログラミング系技能#","プロパガンダ","生物兵器#","賭博","終末学","賄賂","偽造","旧算世界文化","旧算世界薬学","大量破壊兵器",]
+};
+
+/* 秘密結社ごとの【強制】分野技能データ (優先度: 高) */
+const secretSocietyMandatory = {
+  "amu": [],
+  "comm": ["プロパガンダ"],
+  "cfr": [],
+  "cm": [],
+  "dre": ["爆破#"],
+  "fcc": ["典礼学"],
+  "fd": [],
+  "fe": [],
+  "hu": [],
+  "iru": [],
+  "mis": ["ドラッグ調達"],
+  "プロ・テック": [],
+  "サイオン": [],
+  "pur": ["爆破#"],
+  "ro": ["旧算世界文化"],
+  "sic": []
+};
+
+/* 秘密結社ごとの推奨分野技能データ */
+const secretSocietyRecommendations = {
+  "amu": ["ミュータントパワー学","漫画トリビア","身振符牒"],
+  "cfr": ["クレジットハック","電子計算機業界用語","ハッキング#","プログラミング系技能#"],
+  "comm": ["爆破#","トラクター維持管理","プロパガンダ"],
+  "cm": ["サイボーグ技術","ボット判別","生物兵器#"],
+  "dre": ["爆破#","アクション映画","パーティ知識","賭博"],
+  "fcc": ["アルファコンプレックス史","典礼学","終末学"],
+  "fd": ["爆破#","道具制作系技能","プログラミング"],
+  "fe": ["価格交渉","広告とマーケティング","賄賂","偽造"],
+  "hu": ["「体」術","ホビー","言語","旧算世界文化"],
+  "iru": [],
+  "mis": ["ドラッグ調達","瞑想","パーティ知識","旧算世界薬学"],
+  "プロ・テック": ["実験的装備補修維持","ビデオゲーム","大量破壊兵器"],
+  "サイオン": ["ミュータントパワー学","漫画トリビア","身振符牒"],
+  "pur": ["爆破#","嘲笑","生物兵器#","身振符牒"],
+  "ro": ["旧算記録学","料理","編み物","音楽","旧算世界文化"],
+  "sic": ["サバイバル術","自然知識","旅行","バードウォッチング","植物学","動物の痕跡認識","その他","生物兵器#"]
+};
+
+/* 秘密技能プルダウンの初期設定 */
+function initSecretSkills() {
+  const categories = [
+    { id: 'secretSkill_unusual', list: secretSkillsData.unusual },
+    { id: 'secretSkill_unnecessary', list: secretSkillsData.unnecessary },
+    { id: 'secretSkill_unhealthy', list: secretSkillsData.unhealthy }
+  ];
+
+  categories.forEach(cat => {
+    const select = document.getElementById(cat.id);
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">▼ 分野技能を選択</option>';
+    cat.list.forEach(skill => {
+      const opt = document.createElement('option');
+      opt.value = skill;
+      opt.textContent = skill;
+      select.appendChild(opt);
+    });
+  });
+
+  updateSecretSkillHighlights();
+}
+
+/* 選択中の秘密結社に合わせておすすめ技能の色・文字を変更 */
+function updateSecretSkillHighlights() {
+  const societySelect = document.getElementById('secretSociety');
+  const currentSociety = societySelect ? societySelect.value : '';
+  const mandatoryList = secretSocietyMandatory[currentSociety] || [];
+  const recommendedList = secretSocietyRecommendations[currentSociety] || [];
+
+  const selectIds = ['secretSkill_unusual', 'secretSkill_unnecessary', 'secretSkill_unhealthy'];
+
+  selectIds.forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+
+    Array.from(select.options).forEach(opt => {
+      if (!opt.value) return;
+
+      const isMandatory = mandatoryList.includes(opt.value);
+      const isRecommended = recommendedList.includes(opt.value);
+      if (isMandatory) {
+        opt.textContent = `★ ${opt.value} (強制)`;
+        opt.style.color = '#c62828';
+        opt.style.fontWeight = 'bold';
+        opt.style.backgroundColor = '#ffebee';
+      } else
+      if (isRecommended) {
+        opt.textContent = `★ ${opt.value} (推奨)`;
+        opt.style.color = 'green';
+        opt.style.fontWeight = 'bold';
+        opt.style.backgroundColor = '#c7f4c2';
+      } else {
+        opt.textContent = opt.value;
+        opt.style.color = '';
+        opt.style.fontWeight = '';
+        opt.style.backgroundColor = '';
+      }
+    });
+  });
+}
+
+/* 秘密技能3つの値を1d20で決定する関数 */
+function rollSecretSkills() {
+  const ids = ['secretVal_unusual', 'secretVal_unnecessary', 'secretVal_unhealthy'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = Math.floor(Math.random() * 20) + 1;
+    }
+  });
+}
+
+// ページ読み込み時に初期化を実行
+document.addEventListener('DOMContentLoaded', () => {
+  initSecretSkills();
+});
+
+
+/* キャラクターシートをJSONでダウンロード保存 */
+function exportCharacterJSON(isFull=true) {
+  const data = {};
+  // idが設定されている全input, select, textareaを取得
+  const elements = document.querySelectorAll('input[id], select[id], textarea[id]');
+
+  elements.forEach(el => {
+    const isSecret = el.id.toLowerCase().includes('secret') || 
+                     el.classList.contains('secret-field') || 
+                     el.closest('.secret-area') !== null ||
+                     el.closest('#backSide') !== null;
+
+    // 秘匿情報であればスキップ
+    if (!isFull && isSecret) {
+      return;
+    }
+    if (el.type === 'checkbox') {
+      data[el.id] = el.checked;
+    } else {
+      data[el.id] = el.value;
+    }
+  });
+
+// ボタン型トグルの判定（activeクラスを持っているか）
+const specialtyStates = {};
+  document.querySelectorAll('.specialty-item').forEach(item => {
+    const nameEl = item.querySelector('.spec-name');
+    const btnEl = item.querySelector('.arrow-btn');
+    if (nameEl && btnEl) {
+      specialtyStates[nameEl.textContent.trim()] = btnEl.getAttribute('data-state') || '0';
+    }
+  });
+  data.specialtyStates = specialtyStates;
+
+// ファイル名の設定（例: PC名_full.json / PC名_public.json）
+  const charNameInput = document.getElementById('charName');
+  let rawName = charNameInput ? charNameInput.value.trim() : '';
+
+  // 未入力の場合はデフォルト名「paranoia_character」を使用
+  if (!rawName) {
+    rawName = 'paranoia_character';
+  }
+
+  // OSのファイル名で禁止されている記号 (\ / : * ? " < > |) を除去
+  const safeName = rawName.replace(/[\\/:*?"<>|]/g, '');
+
+  const paranoiaName = '_paranoia'
+  const suffix = isFull ? '_full' : '_public';
+  const fileName = `${safeName}${paranoiaName}${suffix}.json`;
+
+  // 4. JSONファイルのダウンロード処理
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+/* 選択されたJSONファイルを読み込んでフォームへ復元 */
+function importCharacterJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      Object.keys(data).forEach(id => {
+if (id === 'specialtyStates') return;
+
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        if (el.type === 'checkbox') {
+          el.checked = data[id];
+        } else {
+          el.value = data[id];
+        }
+
+        el.dispatchEvent(new Event('input'));
+        el.dispatchEvent(new Event('change'));
+      });
+
+// ボタン型トグルの復元
+if (data.specialtyStates) {
+        document.querySelectorAll('.specialty-item').forEach(item => {
+          const nameEl = item.querySelector('.spec-name');
+          const btnEl = item.querySelector('.arrow-btn');
+          if (nameEl && btnEl) {
+            const skillName = nameEl.textContent.trim();
+            if (data.specialtyStates.hasOwnProperty(skillName)) {
+              const state = Number(data.specialtyStates[skillName]) || 0;
+              btnEl.setAttribute('data-state', state);
+
+              // ボタンの表示記号を復元
+              if (state === 0) btnEl.textContent = '-';
+              else if (state === 1) btnEl.textContent = '↑';
+              else if (state === 2) btnEl.textContent = '⇈';
+              else if (state === 3) btnEl.textContent = '↓';
+            }
+          }
+        });
+      }
+
+// 3. 全体の合計値・分野技能の数値を一括再計算して画面に反映
+      calcTotals();
+      updateAllSpecialtyValues();
+      if (typeof updateSecretSkillHighlights === 'function') {
+        updateSecretSkillHighlights();
+      }
+
+      alert('キャラクターデータを正常に読み込みました！');
+    } catch (err) {
+      alert('ファイルの読み込みに失敗しました。正しいJSONファイルか確認してください。');
+    }
+  };
+
+  reader.readAsText(file);
+  // 同じファイルを連続で読み込めるよう値をリセット
+  event.target.value = '';
+}
+
+</script>
+
+</body>
+</html>
