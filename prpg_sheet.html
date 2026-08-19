@@ -5,7 +5,7 @@
 <title>パラノイア キャラクターシート出力ツール</title>
 <style>
   /* サイトの見た目を整えるデザイン（CSS） */
-    body { font-family: sans-serif; background-color: #333; color: #333; padding: 20px;}
+    body { font-family: sans-serif; background-color: #1e1e2e; color: #333; padding: 20px;}
   .container { background-color: #fff; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); border-top: 5px solid #000; }
   /* h1のスタイルを調整し、タイトルエリアで下線を引きフレックス化 */
   .title-area {
@@ -210,7 +210,7 @@ border: 1px solid #ccc;
 
 ３.ミュータントパワーを取得する（ダイス）。
 
-４.秘密結社を決定する（緑ダイス）、このとき注意書きをよく読むこと。秘密技能を取得する。強制の技能は必ず取得する、このとき注意書きをよく読むこと。
+４.秘密結社を決定する（左ダイス）、このとき注意書きをよく読むこと。秘密技能を取得する。強制の技能は必ず取得する、このとき注意書きをよく読むこと。
 
 ５.メモ、秘匿メモは任意。ただしあなたがここまででスパイになっていればその潜入元と潜入先を秘匿メモに書き記すこと。癖は横車ポイントをUVが採用していれば有効となる。
 
@@ -507,7 +507,7 @@ border: 1px solid #ccc;
 </div>
 
 <!-- JSON保存・読み込みボタン -->
-<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+<div style="display: flex; gap: 10px; margin: 0 auto 20px auto; max-width: 600px; flex-wrap: wrap;">
   <button type="button" onclick="exportCharacterJSON(true)" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">💾 キャラデータを保存</button>
   <button type="button" onclick="exportCharacterJSON(false)" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">📄 公開データのみ保存</button>
   <button type="button" onclick="document.getElementById('jsonFileInput').click()" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">📂 キャラデータを読み込み</button>
