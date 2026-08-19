@@ -5,9 +5,24 @@
 <title>パラノイア キャラクターシート出力ツール</title>
 <style>
   /* サイトの見た目を整えるデザイン（CSS） */
-  body { font-family: sans-serif; background-color: #333; color: #333; padding: 20px;}
+    body { font-family: sans-serif; background-color: #333; color: #333; padding: 20px;}
   .container { background-color: #fff; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); border-top: 5px solid #000; }
-  h1 { text-align: center; color: #000; font-size: 24px; border-bottom: 2px solid #ccc; padding-bottom: 10px;}
+  /* h1のスタイルを調整し、タイトルエリアで下線を引きフレックス化 */
+  .title-area {
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  .title-area h1 {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    color: #000;
+    font-size: 24px;
+    padding-left: 32px; /* インフォアイコン分の幅を取ることで文字をぴったり中央に配置 */
+  }
   h3 { margin-top: 15px; margin-bottom: 10px; font-size: 15px; border-left: 4px solid #000; padding-left: 8px; }
   .form-group { margin-bottom: 20px; }
   .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px;}
@@ -88,9 +103,9 @@
   .dice-btn:hover { background-color: #72bd72; }
 
 .dice-btn-blue {
-    background-color: #1e88e5;
+    background-color: #75e275;
   }
-  .dice-btn-blue:hover { background-color: #1565c0; }
+  .dice-btn-blue:hover { background-color: #72bd72; }
 
 
 /*主要技能と分野技能の枠組みスタイル */
@@ -177,9 +192,31 @@ border: 1px solid #ccc;
 </head>
 <body>
 
-<div class="container">
-  <h1>Paranoia CharactorSheet</h1>
+  <div class="container">
+  <!-- タイトルエリア（右側にインフォマークを配置） -->
+  <div class="title-area">
+    <h1>Paranoia CharactorSheet</h1>
+    <button type="button" class="info-icon" onclick="toggleTitleDesc()">ⓘ</button>
+  </div>
   
+  <!-- 下線と名前欄の間に表示される説明欄 -->
+  <div id="titleDesc" style="display: none; margin-bottom: 15px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; white-space: pre-wrap; color: #333;">
+ここに表示したい説明文を記載します。
+（このページはパラノイア(トラブルシューターズ)用のキャラクターシートです。ただし完全に正確ではありません。
+キャラクター作成の手順は以下の通りです。※ページをリロードすると作成途中のデータは失われます。
+１．名前、クリアランス（デフォルトは赤）、セクター（任意のアルファベット3字）、クローンナンバー（スタートは1）を入力。
+
+２.サービスグループを決定する（ダイスもしくは合計40ポイントから振り分け(最大10)）。技能（マネジメントなど）の値を決定する（ダイス）。一般的専門分野（↑）をエネルギー兵器を除き最大6つ取得する（１技能につき最大３つ）。その後同じ技能内で一般的専門分野を取得しただけ弱点分野（↓）を取得する。そしてサービスグループ右のⓘに従い追加で一般的専門分野を取得or跳ね上げする。
+
+３.ミュータントパワーを取得する（ダイス）。
+
+４.秘密結社を決定する（緑ダイス）、このとき注意書きをよく読むこと。秘密技能を取得する。強制の技能は必ず取得する、このとき注意書きをよく読むこと。
+
+５.メモ、秘匿メモは任意。ただしあなたがここまででスパイになっていればその潜入元と潜入先を秘匿メモに書き記すこと。癖は横車ポイントをUVが採用していれば有効となる。
+
+６.一番下の「キャラデータを保存」から保存する。これはプレイ画面で閲覧することもできる。）
+  </div>
+
   <div class="form-group flex-row">
     <div class="box-name">
       <label>名前</label>
@@ -252,7 +289,7 @@ border: 1px solid #ccc;
     </div>
     </div>
   <!-- 行動系技能 -->
-  <label>行動系技能</label>
+  <label>行動系技能</label
 
   <div class="skill-block">
     <div class="skill-main">
@@ -482,6 +519,16 @@ border: 1px solid #ccc;
 
 <script>
 
+function toggleTitleDesc() {
+  const descArea = document.getElementById('titleDesc');
+  if (descArea.style.display === 'none' || descArea.style.display === '') {
+    descArea.style.display = 'block';
+  } else {
+    descArea.style.display = 'none';
+  }
+}
+
+  
 /* サービスグループの説明データ定義 */
 const serviceGroupData = {
   "Army": "以下から1つ、一般的専門分野を弱点分野無しに習得する。\n \n【バ】爆破、エネルギー兵器、白兵戦武器、射出兵器、投擲武器、格闘、車両運用",
