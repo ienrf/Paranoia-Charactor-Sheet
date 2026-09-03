@@ -165,8 +165,9 @@ border: 1px solid #ccc;
   
   /* 状態ごとの色変化（上向き: 緑 / 下向き: 赤） */
   .arrow-btn[data-state="1"] { color: #2e7d32; background-color: #e8f5e9; border-color: #a5d6a7; }
-  .arrow-btn[data-state="2"] { color: #1565c0; background-color: #e3f2fd; border-color: #90caf9; }
-  .arrow-btn[data-state="3"] { color: #c62828; background-color: #ffebee; border-color: #ef9a9a; }
+  .arrow-btn[data-state="2"] { color: #c62828; background-color: #ffebee; border-color: #ef9a9a; }
+  .arrow-btn[data-state="3"] { color: #1565c0; background-color: #e3f2fd; border-color: #90caf9; }
+  
   
 
 /* 秘密情報領域（2ページ目）のスタイル */
@@ -710,9 +711,9 @@ window.onload = function() {
         if (state === 1) {
           finalVal = mainVal + 4; // ▲ 上向き: 親技能 + 4
         } else if (state === 2) {
-          finalVal = mainVal + 8; // △: 親技能 + 8
+          finalVal = 1;          // ▼ 下向き: 1 固定
         } else if (state === 3) {
-          finalVal = 1;          // ▼ 下向き: 親技能の値に関わらず「1」に固定
+          finalVal = mainVal + 8; // △: 親技能 + 8
         }
 
         valInput.value = finalVal;
